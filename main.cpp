@@ -75,13 +75,13 @@ int main()
             // ACCELEROMETER TESTING
             // int test = acc.getAccX();
             // std::cout << test << "\n" ;
-            std::cout << "-------------------" << "\n" << "\n";
+            // std::cout << "-------------------" << "\n" << "\n";
 
             // GPS TESTING
             char GPSbuffer[250]={};
-            serialGPS.read(GPSbuffer, 250);
+            // serialGPS.read(GPSbuffer, 250);
             
-            std::cout << GPSbuffer << "\n";
+            // std::cout << GPSbuffer << "\n";
             
 
             // $GPGGA,064951.000,2307.1256,N,12016.4438,E,1,8,0.95,39.9,M,17.8,M,,*65 
@@ -96,7 +96,7 @@ int main()
             
             // serialPC.write(GPSbuffer, 100);
 
-            ThisThread::sleep_for(20s);
+            // ThisThread::sleep_for(20s);
 
 
 
