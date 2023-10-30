@@ -49,10 +49,9 @@ void BrightnessSerial(void) {
 
     
     while(true) {
-            
 
-            /*
-
+/*
+                std::cout << "-------------" << "\n";
                 // Read Accelerometer
                 char cmd[1], cmd_X_MSB[1];
                 char buf2[2]={}, buf1[1]={};
@@ -68,8 +67,8 @@ void BrightnessSerial(void) {
 
                 // STATUS READ
                 cmd[0]=0x0D;    // status register
-                i2c.write(addMMA8451_8bit ,cmd,1);
-                i2c.read(addMMA8451_8bit ,buf1,1);
+                i2c.write(addMMA8451_7bit ,cmd,1);
+                i2c.read(addMMA8451_7bit ,buf1,1);
 
                 std::bitset<8> STATUS;
                 STATUS=buf1[0]; 
@@ -77,16 +76,16 @@ void BrightnessSerial(void) {
 
                 // SYSTEM MODE READ
                 cmd[0]=0x0B;    // system mode register
-                i2c.write(addMMA8451_8bit ,cmd,1);
-                i2c.read(addMMA8451_8bit ,buf1,1);
+                i2c.write(addMMA8451_7bit ,cmd,1);
+                i2c.read(addMMA8451_7bit ,buf1,1);
 
                 BUFFER=buf1[0]; 
                 std::cout << "MODE:" << BUFFER << "\n" ;
 
 
                 //  X accel
-                i2c.write(addMMA8451_8bit ,cmd_X_MSB,1,true);
-                i2c.read(addMMA8451_8bit ,buf2,2);
+                i2c.write(addMMA8451_7bit ,cmd_X_MSB,1,true);
+                i2c.read(addMMA8451_7bit ,buf2,2);
 
                 std::bitset<8> X_MSB;
                 std::bitset<8> X_LSB;

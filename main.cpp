@@ -43,15 +43,17 @@ void ledMode(string mode_aux) {
 
 
 // ACCELEROMETER
-// const int addMMA8451_8bit= 0x1C << 1;   
-// MMA8451Q acc(D14,D15,addMMA8451_8bit);   
+const int addMMA8451_7bit= 0x1C; // A connected to GND
+const int addMMA8451_8bit= 0x1C << 1;   
+MMA8451Q acc(D14,D15,addMMA8451_7bit);   
 
+uint8_t IDtest;
 
 // SERIAL TO PC
 // static BufferedSerial serialPC(USBTX, USBRX);
 
 // GPS 
-static BufferedSerial serialGPS(D8, D2);
+//static BufferedSerial serialGPS(D8, D2);
 
 int main()
 {
@@ -66,16 +68,24 @@ int main()
     //serialPC.set_format(8,serialPC.None,1);
 
     // SERIAL GPS
-    serialGPS.set_baud(9600);
-    serialGPS.set_format(8,serialGPS.None,1);
+    //serialGPS.set_baud(9600);
+    //serialGPS.set_format(8,serialGPS.None,1);
 
 
     while (true) {
 
             // ACCELEROMETER TESTING
-            // int test = acc.getAccX();
-            // std::cout << test << "\n" ;
-            // std::cout << "-------------------" << "\n" << "\n";
+           // float test = acc.getAccX();
+           // std::cout << test << "\n" ;
+           // std::cout << (int) test << "\n" ;
+           std::cout << "----------" << "\n";
+
+           IDtest = acc.getWhoAmI();
+
+           std::cout << (int)IDtest << "\n";
+
+           
+
 
             // GPS TESTING
             char GPSbuffer[250]={};
@@ -96,9 +106,7 @@ int main()
             
             // serialPC.write(GPSbuffer, 100);
 
-            // ThisThread::sleep_for(20s);
-
-
+            ThisThread::sleep_for(2s);
 
 
 
