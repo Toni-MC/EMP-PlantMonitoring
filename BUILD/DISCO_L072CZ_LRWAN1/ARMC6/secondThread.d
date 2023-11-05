@@ -1,6 +1,5 @@
 BUILD\DISCO_L072CZ_LRWAN1\ARMC6\secondThread.o: secondThread.cpp \
-  BUILD\DISCO_L072CZ_LRWAN1\ARMC6\mbed_config.h header.h \
-  MMA8451Q\MMA8451Q.h mbed-os\mbed.h \
+  BUILD\DISCO_L072CZ_LRWAN1\ARMC6\mbed_config.h header.h mbed-os\mbed.h \
   mbed-os\platform\include\platform\mbed_version.h \
   mbed-os\rtos\include\rtos\rtos.h \
   mbed-os\rtos\include\rtos\internal\mbed_rtos_storage.h \

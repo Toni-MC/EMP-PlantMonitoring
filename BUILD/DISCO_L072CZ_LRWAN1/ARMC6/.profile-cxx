@@ -6,7 +6,6 @@
         "--ide=mbed",
         "--target=arm-arm-none-eabi",
         "-DMBED_DEBUG",
-        "-DMBED_MINIMAL_PRINTF",
         "-DMBED_RAM_SIZE=0x5000",
         "-DMBED_RAM_START=0x20000000",
         "-DMBED_ROM_SIZE=0x30000",

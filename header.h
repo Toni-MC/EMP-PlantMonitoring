@@ -1,20 +1,17 @@
-// #include "mbed.h"
+#include "mbed.h"
+
 #include <cstdio>
 #include <cstring>
 #include <string>
 
-#include "MMA8451Q.h"
+#include <bitset>
+#include <cassert>
+#include <cstddef>
 
 
-/*
-const uint32_t FLAG_LOW  = (1UL << 1);
-const uint32_t FLAG_MID  = (1UL << 2);
-const uint32_t FLAG_HIGH = (1UL << 3);
-*/
-const uint32_t FLAG_ON = (1UL << 4);
+// Global mode enum
+enum deviceMode{TEST,NORMAL,ADVANCED};
+extern deviceMode mode;
 
-extern int LightLevel;
-extern EventFlags Flags;
-extern string mode;
-extern Thread threadSerial;
-void BrightnessSerial();
+extern Thread threadMeasurements;
+void MeasurementsDisplay();

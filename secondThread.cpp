@@ -1,140 +1,251 @@
 #include "header.h"
-#include <cstdio>
-#include <cstring>
 
-#include <bitset>
-#include <cassert>
-#include <cstddef>
-#include <iostream>
 
-AnalogIn photoDiode(A0,3.3);
-Thread threadSerial;
-Ticker tickSerial;
-int LightLevel;
-volatile bool serialFlag;
+Thread threadMeasurements;
 
-#define MAXIMUM_BUFFER_SIZE     32
-// static BufferedSerial serial(USBTX, USBRX);
-FILE * pc;
 
-// D14: SDA
-// D15: SCL
+// -------------------------- CONFIG ----------------------
+// ----- STATISTICS -----
+int nMAXreadings=120;   // reading max
+int readings;           // counter for readings
 
-// I2C i2c(D14,D15);
-    const int si7021addr7bit = 0x40;      // 7 bit I2C address
-    const int si7021addr8bit = 0x40 << 1 ;  // 8 bit 
+// Reading values once every 30 seconds
+// 120 readings every 1 hour 
 
-    const int addMMA8451_7bit= 0x1C;
-    const int addMMA8451_8bit= 0x1C << 1;    
 
-    // char cmd[1];
+// ----- MEASUREMENTS LIMITS -----
+// Temperature
+int limitTemperatureMIN=-10;
+int limitTemperatureMAX=-50;
+
+// Relative humidity
+int limitHumidityMIN=25;
+int limitHumidityMAX=75;
+
+// Ambient Light
+int limitLightMIN=0;
+int limitLightMAX=100;
+
+// Soil Moisture
+int limitMoistureMIN=0;
+int limitMoistureMAX=100;
+
+// Color sensor       C R G B
+int limitColorMIN[4]={0,0,0,0}; 
+int limitColorMAX[4]={0,0,0,0};
+
+// Acceleration              X Y Z
+int limitAccelerationMIN[3]={0,0,0}; 
+int limitAccelerationMAX[3]={0,0,0};
+
+
+// ----- PIN DEFINITIONS -----
+// Ambient Light
+AnalogIn sensorLight(A0,3.3);
+
+// Soil Moisture
+AnalogIn sensorMoisture(A2,3.3);
+
+// RGB LED
+DigitalOut ledRed(D11);
+DigitalOut ledGreen(D12);
+DigitalOut ledBlue(D13);
+
+// I2C Interface for Accelerometer and Temp/Hum/Color sensors 
+// D14 - I2C1_SDA
+// D15 - I2C1_SCL
+I2C i2c(D14,D15);
+char bufferWrite[2], bufferRead[5];
+float bufferFloat;
+
+// Device and register addresses
+// Temperature and Humidity
+#define address_TempHum_si7021  0x40 << 1
+#define REG_HUMIDITY_HOLD       0xE5
+#define REG_TEMPERATURE_PREV    0xE3
+
+// Accelerometer
+// A not connected (SAO=1), if A connected to GND address would be 0x1C  
+#define address_Accel_MMA8451 0x1D << 1    
+
+// Color sensor
+#define address_Color_TCS34725  0x29 << 1
+
+
+
+
+// Serial Interface for GPS
+// D8 - Serial1_TX
+// D2 - Serial1_RX
+static BufferedSerial serialGPS(D8, D2);
+
+// Serial Interface with PC through USB
+// D0(USBRX) and D1(USBTX) pins reserved for USB
+static BufferedSerial serialPC(USBTX, USBRX);
+char bufferSerial[128];
    
 
 
-unsigned short Brightness, BrightnessMAX=65535;
-float temp;
+
+// Tickers logic
+volatile bool flagTEST,flagNORMAL;
+Ticker tickerNORMAL, tickerADVANCED;
+void tickTEST(){flagTEST=true;}
+void tickNORMAL(){flagNORMAL=true;}
 
 
-void tick(){serialFlag=true;}
 
+void MeasurementsDisplay(void) {
+    
+    // Config serial communications
+    serialPC.set_baud(9600);
+    serialPC.set_format(8,serialPC.None,1);
 
-
-void BrightnessSerial(void) {
-
-   // serial.set_baud(9600);
-   // serial.set_format(8,serial.None,1);
+    serialGPS.set_baud(9600);
+    serialGPS.set_format(8,serialGPS.None,1);
    
-    tickSerial.attach(&tick,2s); // Cada 2 segundos actualizar  Brightness
+    // Tickers of 2s and 30s for each mode
+    tickerNORMAL.attach(&tickTEST,2s);
+    tickerADVANCED.attach(&tickNORMAL,30s); 
 
+    // Measurement variables
+    // Light
+    float brightness, brightnessMAX=65535;
 
+    // Soil Moisture
+    float moisture, moistureMAX=65535;
+    
+    // Temperature and relative humidity
+    float temperature, humidity;
+
+    // Color 
+
+    // Accelerometer
+
+    // GPS
+    char GPSbuffer[256];
+
+    ledRed=0;
+    ledGreen=1;
+    ledBlue=0;
     
     while(true) {
+        if (mode==TEST) {readings=0;}
 
-/*
-                std::cout << "-------------" << "\n";
-                // Read Accelerometer
-                char cmd[1], cmd_X_MSB[1];
-                char buf2[2]={}, buf1[1]={};
-
-                cmd_X_MSB[0]=0x01;
-
-                std:bitset<8> BUFFER;
-                BUFFER=buf2[1]; 
-                std::cout << "BUFFER2:" << BUFFER << "\n" ;
-                BUFFER=buf1[0];
-                std::cout << "BUFFER1:" << BUFFER << "\n" ;
+        // -------------------------- TIMED LOOP ----------------------
+        // Only activates every 2 seconds when its TEST mode
+        // Only activates every 30 seconds when its NORMAL mode
 
 
-                // STATUS READ
-                cmd[0]=0x0D;    // status register
-                i2c.write(addMMA8451_7bit ,cmd,1);
-                i2c.read(addMMA8451_7bit ,buf1,1);
-
-                std::bitset<8> STATUS;
-                STATUS=buf1[0]; 
-                std::cout << "STATUS:" << STATUS << "\n" ;
-
-                // SYSTEM MODE READ
-                cmd[0]=0x0B;    // system mode register
-                i2c.write(addMMA8451_7bit ,cmd,1);
-                i2c.read(addMMA8451_7bit ,buf1,1);
-
-                BUFFER=buf1[0]; 
-                std::cout << "MODE:" << BUFFER << "\n" ;
-
-
-                //  X accel
-                i2c.write(addMMA8451_7bit ,cmd_X_MSB,1,true);
-                i2c.read(addMMA8451_7bit ,buf2,2);
-
-                std::bitset<8> X_MSB;
-                std::bitset<8> X_LSB;
-
-                X_MSB |= buf2[0];
-                X_LSB |= buf2[1];
-
-                std::cout << "X_MSB:" << X_MSB << "; L_MSB:" << X_LSB << "\n" ;
-                std::cout << "\n";
-
-
-
-
-                // string modeSerial= "MODE= " + mode + " ";
-                // serial.write(modeSerial.c_str(), modeSerial.length());
-
-                /*
-                // Read brightness
-                Brightness = photoDiode.read_u16();
-                if (Brightness<=BrightnessMAX*0.33)                                             {LightLevel=1;}
-                else if (Brightness>=BrightnessMAX*0.33 && Brightness<=BrightnessMAX*0.66)      {LightLevel=2;}
-                else if (Brightness>=BrightnessMAX*0.66)                                        {LightLevel=3;}
-
-                // Read temperature
-                char cmd[1];
-                cmd[0]=0xE3;
-                i2c.write(si7021addr8bit ,cmd,1);
-                i2c.read(si7021addr8bit ,buf2,2);
+        if( (flagTEST & (mode==TEST))   ||    ((flagNORMAL) & (mode==NORMAL))){
             
-                float tmp = (float((buf2[0] << 8) | buf2[1]));
-                temp=((175.72*tmp)/65536)-46.85;
+            sprintf(bufferSerial,"----------------------------- \n");
+            serialPC.write(bufferSerial, strlen(bufferSerial));
 
-                // Display Mode, Temp and Brightness
-                char buf[MAXIMUM_BUFFER_SIZE] = {0};
+            // Clean timer flags
+            flagTEST=false;
+            flagNORMAL=false;
 
-                // Temperature
-                sprintf (buf, "T= %f ºC    ", temp);
-                serial.write(buf, strlen(buf));
+            // ---------------------- MEASUREMENTS ----------------------
+            // SOIL MOISTURE
+            moisture = (sensorMoisture.read_u16()*100)/moistureMAX;
 
-                // Brightness measurement
-                sprintf (buf, "Brightness= %f %%", ((float)Brightness*100/BrightnessMAX));
-                serial.write(buf, strlen(buf));
+            // LIGHT SENSOR 
+            brightness = (sensorLight.read_u16()*100)/brightnessMAX;
+
+            // GPS  
+            serialGPS.read(GPSbuffer, strlen(GPSbuffer));
+            
+
+            // COLOR
+
+
+            // ACCELEROMETER
+
+
+            // HUMIDITY
+            bufferWrite[0]=REG_HUMIDITY_HOLD;
+
+            i2c.write(address_TempHum_si7021 ,bufferWrite,1);
+            i2c.read(address_TempHum_si7021 ,bufferRead,2);
+
+            bufferFloat=(float((bufferRead[0] << 8) | bufferRead[1]));       
+            humidity=((125*bufferFloat)/65536)-6;
+
+            // TEMPERATURE
+            bufferWrite[0]=REG_TEMPERATURE_PREV;
+
+            i2c.write(address_TempHum_si7021 ,bufferWrite,1);
+            i2c.read(address_TempHum_si7021 ,bufferRead,2);
+
+            float tmp = (float((bufferRead[0] << 8) | bufferRead[1]));
+            temperature=((175.72*tmp)/65536)-46.85;
+
+
+
+            // ---------------------- NORMAL MODE ----------------------
+            if (mode==NORMAL){
+                // ------------------ ALARMS ----------------------
+                // Check if every measurement is outside limits
+
+
+
+
+                // ------------------ STATISTICS ------------------
+                // Save measurements for statistics every 1 hour
+                // 120 readings for each sensor
+                readings++;
+
+                if (readings==nMAXreadings){
+                    
+                    readings=0; // reset the readings to 0
                 
-                serial.write("\n", 2);
-                serialFlag=false;
-                */
 
-            
-                ThisThread::sleep_for(5s);
+                // When 120 readings are done: 
 
+                    // Mean, MAX, MIN 
+                    // TEMPERATURE
+                    // RELATIVE HUMIDITY
+                    // AMBIENT LIGHT
+                    // SOIL MOISTURE
+
+
+                    // Median 
+                    // RGB SENSOR
+
+
+                    // MAX, MIN of each axis
+                    // ACCELEROMETER
+
+                }
+                //
+
+                // 
+            }
+
+            // ---------------------- SERIAL COMMUNICATION ----------------------
+
+            // Brigthness
+            sprintf (bufferSerial, "Brightness= %.1f %% \n", brightness);
+            serialPC.write(bufferSerial, strlen(bufferSerial));
+
+            // Moisture
+            sprintf (bufferSerial, "Soil Moisture= %.1f %% \n", moisture);
+            serialPC.write(bufferSerial, strlen(bufferSerial));
+
+            // Relative humidity
+            sprintf (bufferSerial, "T= %.1f ºC \n", temperature);
+            serialPC.write(bufferSerial, strlen(bufferSerial));
+
+            // Temperature
+            sprintf (bufferSerial, "RH= %.1f %% \n", humidity);
+            serialPC.write(bufferSerial, strlen(bufferSerial));
+
+
+            // Show statistics if 120 readings are done
+
+
+
+        }
     } 
 }
