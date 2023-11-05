@@ -41,7 +41,7 @@ int main()
     sw.rise(sw_off_isr);
 
     // Initialize mode to NORMAL
-    changeMode(TEST);
+    changeMode(NORMAL);
 
     // Start the second thread for measurements
     threadMeasurements.start(MeasurementsDisplay);

@@ -8,6 +8,8 @@
 #include <cassert>
 #include <cstddef>
 
+#include <numeric>
+#include <algorithm>
 
 // Global mode enum
 enum deviceMode{TEST,NORMAL,ADVANCED};

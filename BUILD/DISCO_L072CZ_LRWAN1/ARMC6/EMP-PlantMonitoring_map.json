@@ -2,10 +2,10 @@
     {
         "module": "[lib]\\c_p.l",
         "size": {
-            ".text": 11823,
+            ".text": 11847,
             ".data": 16,
             ".bss": 348,
-            ".text-delta": 0,
+            ".text-delta": 24,
             ".data-delta": 0,
             ".bss-delta": 0
         }
@@ -13,7 +13,7 @@
     {
         "module": "[lib]\\fz_ps.l",
         "size": {
-            ".text": 2714,
+            ".text": 3152,
             ".data": 0,
             ".bss": 0,
             ".text-delta": 0,
@@ -24,10 +24,10 @@
     {
         "module": "[lib]\\libcpp_p.l",
         "size": {
-            ".text": 1,
+            ".text": 99,
             ".data": 0,
             ".bss": 0,
-            ".text-delta": 0,
+            ".text-delta": 98,
             ".data-delta": 0,
             ".bss-delta": 0
         }
@@ -68,7 +68,7 @@
     {
         "module": "main.o",
         "size": {
-            ".text": 548,
+            ".text": 556,
             ".data": 0,
             ".bss": 167,
             ".text-delta": 0,
@@ -123,10 +123,10 @@
     {
         "module": "mbed-os\\platform",
         "size": {
-            ".text": 6995,
+            ".text": 7063,
             ".data": 64,
             ".bss": 420,
-            ".text-delta": 0,
+            ".text-delta": 68,
             ".data-delta": 0,
             ".bss-delta": 0
         }
@@ -156,10 +156,10 @@
     {
         "module": "secondThread.o",
         "size": {
-            ".text": 1192,
+            ".text": 2965,
             ".data": 4,
             ".bss": 2657,
-            ".text-delta": -4,
+            ".text-delta": -197,
             ".data-delta": 0,
             ".bss-delta": 0
         }
@@ -168,8 +168,8 @@
         "summary": {
             "static_ram": 13400,
             "static_ram_delta": 0,
-            "total_flash": 64767,
-            "total_flash_delta": -4
+            "total_flash": 67176,
+            "total_flash_delta": -7
         }
     }
 ]

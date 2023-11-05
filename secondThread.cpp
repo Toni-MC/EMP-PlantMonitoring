@@ -1,13 +1,14 @@
 #include "header.h"
 
-
 Thread threadMeasurements;
 
 
 // -------------------------- CONFIG ----------------------
 // ----- STATISTICS -----
-int nMAXreadings=120;   // reading max
+int readingsMaxN=120;   // reading max
 int readings;           // counter for readings
+
+
 
 // Reading values once every 30 seconds
 // 120 readings every 1 hour 
@@ -94,6 +95,14 @@ void tickTEST(){flagTEST=true;}
 void tickNORMAL(){flagNORMAL=true;}
 
 
+// Aux function to calculate Mean and Max/Min values
+void statistics(float *readings, float *statistics){
+    
+    statistics[0]=(float)accumulate(readings,readings+readingsMaxN,0)/readingsMaxN;
+    statistics[1]=*max_element(readings, readings + readingsMaxN);
+    statistics[2]=*min_element(readings, readings + readingsMaxN);
+
+}
 
 void MeasurementsDisplay(void) {
     
@@ -111,12 +120,18 @@ void MeasurementsDisplay(void) {
     // Measurement variables
     // Light
     float brightness, brightnessMAX=65535;
+    float readingsBrigthness[readingsMaxN];
+    float statisticsBrigthness[3];
 
     // Soil Moisture
     float moisture, moistureMAX=65535;
+    float readingsMoisture[readingsMaxN];
+    float statisticsMoisture[3];
     
     // Temperature and relative humidity
     float temperature, humidity;
+    float readingsTemperature[readingsMaxN],readingsHumidity[readingsMaxN];
+    float statisticsTemperature[3],statisticsHumidity[3];
 
     // Color 
 
@@ -137,7 +152,7 @@ void MeasurementsDisplay(void) {
         // Only activates every 30 seconds when its NORMAL mode
 
 
-        if( (flagTEST & (mode==TEST))   ||    ((flagNORMAL) & (mode==NORMAL))){
+        if((flagTEST & (mode==TEST))   ||    ((flagNORMAL) & (mode==NORMAL))){
             
             sprintf(bufferSerial,"----------------------------- \n");
             serialPC.write(bufferSerial, strlen(bufferSerial));
@@ -155,7 +170,7 @@ void MeasurementsDisplay(void) {
 
             // GPS  
             serialGPS.read(GPSbuffer, strlen(GPSbuffer));
-            
+
 
             // COLOR
 
@@ -194,20 +209,29 @@ void MeasurementsDisplay(void) {
                 // ------------------ STATISTICS ------------------
                 // Save measurements for statistics every 1 hour
                 // 120 readings for each sensor
-                readings++;
+                readingsBrigthness[readings]=brightness;
+                readingsTemperature[readings]=temperature;
+                readingsMoisture[readings]=moisture;
+                readingsHumidity[readings]=humidity;
 
-                if (readings==nMAXreadings){
-                    
-                    readings=0; // reset the readings to 0
+                readings++;
                 
 
+                if (readings==readingsMaxN){
                 // When 120 readings are done: 
 
-                    // Mean, MAX, MIN 
+                    // Mean[0], MAX[1], MIN[2]
                     // TEMPERATURE
+                    statistics(readingsTemperature, statisticsTemperature);
+                    
                     // RELATIVE HUMIDITY
+                    statistics(readingsHumidity, statisticsHumidity);
+
                     // AMBIENT LIGHT
+                    statistics(readingsBrigthness, statisticsBrigthness);
+
                     // SOIL MOISTURE
+                    statistics(readingsMoisture, statisticsMoisture);
 
 
                     // Median 
@@ -225,26 +249,91 @@ void MeasurementsDisplay(void) {
 
             // ---------------------- SERIAL COMMUNICATION ----------------------
 
+            if (mode==TEST){
+            // TEST
+            sprintf(bufferSerial, "TEST");
+            serialPC.write(bufferSerial, strlen(bufferSerial));}
+            
+            else if (mode==NORMAL) {
+            // N of readings
+            sprintf(bufferSerial, "%d/%d",readings,readingsMaxN);
+            serialPC.write(bufferSerial, strlen(bufferSerial));}
+            
+            else if (mode==ADVANCED) {
+            sprintf(bufferSerial, "ADV");
+            serialPC.write(bufferSerial, strlen(bufferSerial));}
+            
+
+
+            // TIME
+            sprintf (bufferSerial, "\tHH:MM:SS \n");
+            serialPC.write(bufferSerial, strlen(bufferSerial));
+
             // Brigthness
-            sprintf (bufferSerial, "Brightness= %.1f %% \n", brightness);
+            sprintf (bufferSerial, "BRIGHTNESS         %.1f %% \n", brightness);
             serialPC.write(bufferSerial, strlen(bufferSerial));
 
             // Moisture
-            sprintf (bufferSerial, "Soil Moisture= %.1f %% \n", moisture);
+            sprintf (bufferSerial, "SOIL MOISTURE      %.1f %% \n", moisture);
             serialPC.write(bufferSerial, strlen(bufferSerial));
 
             // Relative humidity
-            sprintf (bufferSerial, "T= %.1f ºC \n", temperature);
+            sprintf (bufferSerial, "TEMPERATURE        %.1f ºC \n", temperature);
             serialPC.write(bufferSerial, strlen(bufferSerial));
 
             // Temperature
-            sprintf (bufferSerial, "RH= %.1f %% \n", humidity);
+            sprintf (bufferSerial, "RELATIVE HUMIDITY  %.1f %% \n", humidity);
+            serialPC.write(bufferSerial, strlen(bufferSerial));
+
+            // Color sensor
+            sprintf (bufferSerial, "COLOR \n\tCLEAR X \n\tRED   X \n\tGREEN X \n\tBLUE  X\n");
+            serialPC.write(bufferSerial, strlen(bufferSerial));
+
+            // Accelerometer
+            sprintf (bufferSerial, "ACCELEROMETER \n\tX X m/s^2 \n\tY X m/s^2 \n\tZ X m/s^2 \n");
+            serialPC.write(bufferSerial, strlen(bufferSerial));
+
+            // GPS 
+            sprintf (bufferSerial, "GPS \n\tLATITUDE (UTC) X N/S \n\tLONGITUDE(UTC) X E/W \n\tALTITUDE       X m\n");
             serialPC.write(bufferSerial, strlen(bufferSerial));
 
 
             // Show statistics if 120 readings are done
+            if (readings==readingsMaxN){
+                readings=0; // reset the readings to 0
 
+                sprintf (bufferSerial, "\nSTATISTICS \tMEAN \tMAX \tMIN \n");
+                serialPC.write(bufferSerial, strlen(bufferSerial));         
 
+                // Brigthness
+                sprintf (bufferSerial, "BRIGHTNESS \t%.1f \t%.1f \t%.1f \n",statisticsBrigthness[0],statisticsBrigthness[1],statisticsBrigthness[2]);
+                serialPC.write(bufferSerial, strlen(bufferSerial));
+
+                // Soil moisture
+                sprintf (bufferSerial, "SOIL MOISTURE \t%.1f \t%.1f \t%.1f \n",statisticsMoisture[0],statisticsMoisture[1],statisticsMoisture[2]);
+                serialPC.write(bufferSerial, strlen(bufferSerial));
+
+                // Temperature
+                sprintf (bufferSerial, "TEMPERATURE \t%.1f \t%.1f \t%.1f \n",statisticsTemperature[0],statisticsTemperature[1],statisticsTemperature[2]);
+                serialPC.write(bufferSerial, strlen(bufferSerial));
+
+                // Relative humidity
+                sprintf (bufferSerial, "REL. HUMIDITY \t%.1f \t%.1f \t%.1f \n",statisticsHumidity[0],statisticsHumidity[1],statisticsHumidity[2]);
+                serialPC.write(bufferSerial, strlen(bufferSerial));                
+
+                // Accelerometer
+                sprintf (bufferSerial, "ACCELEROMETER \n \tX \t%.1f \t%.1f \t%.1f \n", statisticsHumidity[0],statisticsHumidity[1]);
+                serialPC.write(bufferSerial, strlen(bufferSerial));        
+                sprintf (bufferSerial, "\tY \t%.1f \t%.1f \t%.1f \n", statisticsHumidity[0],statisticsHumidity[1]);
+                serialPC.write(bufferSerial, strlen(bufferSerial));        
+                sprintf (bufferSerial, "\tZ \t%.1f \t%.1f \t%.1f \n", statisticsHumidity[0],statisticsHumidity[1]);
+                serialPC.write(bufferSerial, strlen(bufferSerial));        
+                // Color sensor
+                sprintf (bufferSerial, "DOMINANT COLOR \tX\n");
+                serialPC.write(bufferSerial, strlen(bufferSerial));
+
+            }     
+                    
 
         }
     } 
