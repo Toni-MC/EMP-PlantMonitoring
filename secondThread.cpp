@@ -1,4 +1,5 @@
 #include "header.h"
+#include <cstring>
 
 Thread threadMeasurements;
 
@@ -63,14 +64,33 @@ float bufferFloat;
 // Temperature and Humidity
 #define address_TempHum_si7021  0x40 << 1
 #define REG_HUMIDITY_HOLD       0xE5
-#define REG_TEMPERATURE_PREV    0xE3
+#define REG_TEMPERATURE_PREV    0xE3 
 
 // Accelerometer
 // A not connected (SAO=1), if A connected to GND address would be 0x1C  
-#define address_Accel_MMA8451 0x1D << 1    
+#define address_Accel_MMA8451   0x1D << 1    
 
 // Color sensor
 #define address_Color_TCS34725  0x29 << 1
+
+// datasheet addresses
+//#define REG_COLOR_ID      0x12
+//#define REG_COLOR_TIMER   0X01
+//#define REG_COLOR_ENABLE  0x00
+//#define REG_COLOR_CLEAR   0x14
+//#define REG_COLOR_RED     0x16
+//#define REG_COLOR_GREEN   0x18
+//#define REG_COLOR_BLUE    0x1A
+
+// COMMAND CODES NEED TO HAVE THEIR MSB SET TO 1 on color sensor
+#define REG_COLOR_ID        146     // 0x12 | 0x80
+#define REG_COLOR_TIMER     129     
+#define REG_COLOR_CONTROL   143
+#define REG_COLOR_ENABLE    128
+#define REG_COLOR_CLEAR     148
+#define REG_COLOR_RED       150
+#define REG_COLOR_GREEN     152
+#define REG_COLOR_BLUE      154
 
 
 
@@ -90,7 +110,7 @@ char bufferSerial[128];
 
 // Tickers logic
 volatile bool flagTEST,flagNORMAL;
-Ticker tickerNORMAL, tickerADVANCED;
+Ticker tickerNORMAL, tickerTEST;
 void tickTEST(){flagTEST=true;}
 void tickNORMAL(){flagNORMAL=true;}
 
@@ -114,8 +134,8 @@ void MeasurementsDisplay(void) {
     serialGPS.set_format(8,serialGPS.None,1);
    
     // Tickers of 2s and 30s for each mode
-    tickerNORMAL.attach(&tickTEST,2s);
-    tickerADVANCED.attach(&tickNORMAL,30s); 
+    tickerTEST.attach(&tickTEST,2s);
+    tickerNORMAL.attach(&tickNORMAL,30s); 
 
     // Measurement variables
     // Light
@@ -134,16 +154,34 @@ void MeasurementsDisplay(void) {
     float statisticsTemperature[3],statisticsHumidity[3];
 
     // Color 
-
+    int clear,red,green,blue;
+    
     // Accelerometer
 
     // GPS
-    char GPSbuffer[256];
+    // with 256 bytes it reads GGA,GSA,RMC,VGT and GGA,GSA againQ
+    char bufferGPS[256]; 
 
     ledRed=0;
     ledGreen=1;
     ledBlue=0;
     
+    // Config Devices
+    // Color sensor
+    bufferWrite[0] = REG_COLOR_TIMER;
+    bufferWrite[1] = 0;
+    i2c.write(address_Color_TCS34725,bufferWrite,2,false);
+    
+    bufferWrite[0] = REG_COLOR_CONTROL;
+    bufferWrite[1] = 0;
+    i2c.write(address_Color_TCS34725,bufferWrite,2,false);
+    
+    // ENABLE THE DEVICE AND RGBC 
+    bufferWrite[0] = REG_COLOR_ENABLE;
+    bufferWrite[1] = 3;                                     
+    i2c.write(address_Color_TCS34725,bufferWrite,2,false);
+
+
     while(true) {
         if (mode==TEST) {readings=0;}
 
@@ -169,10 +207,30 @@ void MeasurementsDisplay(void) {
             brightness = (sensorLight.read_u16()*100)/brightnessMAX;
 
             // GPS  
-            serialGPS.read(GPSbuffer, strlen(GPSbuffer));
+            // serialGPS.read(bufferGPS, sizeof(bufferGPS));
 
 
             // COLOR
+
+            bufferWrite[0]=REG_COLOR_CLEAR;
+            i2c.write(address_Color_TCS34725,bufferWrite,1,true);
+            i2c.read(address_Color_TCS34725,bufferRead,2,false);
+            int clear = ((int)bufferRead[1] << 8) | bufferRead[0];
+
+            bufferWrite[0]=REG_COLOR_RED;
+            i2c.write(address_Color_TCS34725,bufferWrite,1,true);
+            i2c.read(address_Color_TCS34725,bufferRead,2,false);
+            int red = ((int)bufferRead[1] << 8) | bufferRead[0];
+
+            bufferWrite[0]=REG_COLOR_GREEN;
+            i2c.write(address_Color_TCS34725,bufferWrite,1,true);
+            i2c.read(address_Color_TCS34725,bufferRead,2,false);
+            int green = ((int)bufferRead[1] << 8) | bufferRead[0];
+
+            bufferWrite[0]=REG_COLOR_BLUE;
+            i2c.write(address_Color_TCS34725,bufferWrite,1,true);
+            i2c.read(address_Color_TCS34725,bufferRead,2,false);
+            int blue = ((int)bufferRead[1] << 8) | bufferRead[0];
 
 
             // ACCELEROMETER
@@ -193,8 +251,8 @@ void MeasurementsDisplay(void) {
             i2c.write(address_TempHum_si7021 ,bufferWrite,1);
             i2c.read(address_TempHum_si7021 ,bufferRead,2);
 
-            float tmp = (float((bufferRead[0] << 8) | bufferRead[1]));
-            temperature=((175.72*tmp)/65536)-46.85;
+            bufferFloat= (float((bufferRead[0] << 8) | bufferRead[1]));
+            temperature=((175.72*bufferFloat)/65536)-46.85;
 
 
 
@@ -286,7 +344,7 @@ void MeasurementsDisplay(void) {
             serialPC.write(bufferSerial, strlen(bufferSerial));
 
             // Color sensor
-            sprintf (bufferSerial, "COLOR \n\tCLEAR X \n\tRED   X \n\tGREEN X \n\tBLUE  X\n");
+            sprintf (bufferSerial, "COLOR \n\tCLEAR %d \n\tRED   %d \n\tGREEN %d \n\tBLUE  %d\n", clear, red, green, blue);
             serialPC.write(bufferSerial, strlen(bufferSerial));
 
             // Accelerometer
@@ -297,6 +355,8 @@ void MeasurementsDisplay(void) {
             sprintf (bufferSerial, "GPS \n\tLATITUDE (UTC) X N/S \n\tLONGITUDE(UTC) X E/W \n\tALTITUDE       X m\n");
             serialPC.write(bufferSerial, strlen(bufferSerial));
 
+            // GPS RAW 
+            //serialPC.write(bufferGPS, sizeof(bufferGPS));
 
             // Show statistics if 120 readings are done
             if (readings==readingsMaxN){
@@ -322,11 +382,11 @@ void MeasurementsDisplay(void) {
                 serialPC.write(bufferSerial, strlen(bufferSerial));                
 
                 // Accelerometer
-                sprintf (bufferSerial, "ACCELEROMETER \n \tX \t%.1f \t%.1f \t%.1f \n", statisticsHumidity[0],statisticsHumidity[1]);
+                sprintf (bufferSerial, "ACCELEROMETER \n \tX \t- \t- \t- \n");
                 serialPC.write(bufferSerial, strlen(bufferSerial));        
-                sprintf (bufferSerial, "\tY \t%.1f \t%.1f \t%.1f \n", statisticsHumidity[0],statisticsHumidity[1]);
+                sprintf (bufferSerial, "\tY \t- \t- \t- \n");
                 serialPC.write(bufferSerial, strlen(bufferSerial));        
-                sprintf (bufferSerial, "\tZ \t%.1f \t%.1f \t%.1f \n", statisticsHumidity[0],statisticsHumidity[1]);
+                sprintf (bufferSerial, "\tZ \t- \t- \t- \n");
                 serialPC.write(bufferSerial, strlen(bufferSerial));        
                 // Color sensor
                 sprintf (bufferSerial, "DOMINANT COLOR \tX\n");
