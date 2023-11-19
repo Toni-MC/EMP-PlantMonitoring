@@ -13,6 +13,8 @@
 
 // Global mode enum
 enum deviceMode{TEST,NORMAL,ADVANCED};
+enum Colors{RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW,WHITE,OFF};
+
 extern deviceMode mode;
 
 extern Thread threadMeasurements;

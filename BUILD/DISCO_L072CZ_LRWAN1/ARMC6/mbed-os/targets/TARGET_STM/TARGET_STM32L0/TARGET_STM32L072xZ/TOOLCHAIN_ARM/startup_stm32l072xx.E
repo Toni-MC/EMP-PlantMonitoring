@@ -1,8 +1,8 @@
 # 1 ".\\mbed-os\\targets\\TARGET_STM\\TARGET_STM32L0\\TARGET_STM32L072xZ\\TOOLCHAIN_ARM\\startup_stm32l072xx.S"
 # 1 "<built-in>" 1
-# 368 "<built-in>"
+# 367 "<built-in>"
 # 1 "./BUILD/DISCO_L072CZ_LRWAN1/ARMC6\\mbed_config.h" 1
-# 369 "<built-in>" 2
+# 368 "<built-in>" 2
 # 1 ".\\mbed-os\\targets\\TARGET_STM\\TARGET_STM32L0\\TARGET_STM32L072xZ\\TOOLCHAIN_ARM\\startup_stm32l072xx.S" 2
 ;******************** (C) COPYRIGHT 2016 STMicroelectronics ********************
 ;* File Name : startup_stm32l072xx.s
