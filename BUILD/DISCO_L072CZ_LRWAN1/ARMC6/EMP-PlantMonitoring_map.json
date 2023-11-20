@@ -2,8 +2,8 @@
     {
         "module": "[lib]\\c_p.l",
         "size": {
-            ".text": 11823,
-            ".data": 16,
+            ".text": 12081,
+            ".data": 20,
             ".bss": 348,
             ".text-delta": 0,
             ".data-delta": 0,
@@ -13,10 +13,10 @@
     {
         "module": "[lib]\\fz_ps.l",
         "size": {
-            ".text": 3164,
+            ".text": 3366,
             ".data": 0,
             ".bss": 0,
-            ".text-delta": 0,
+            ".text-delta": 48,
             ".data-delta": 0,
             ".bss-delta": 0
         }
@@ -68,12 +68,12 @@
     {
         "module": "main.o",
         "size": {
-            ".text": 556,
+            ".text": 584,
             ".data": 0,
             ".bss": 167,
-            ".text-delta": 0,
-            ".data-delta": 0,
-            ".bss-delta": 0
+            ".text-delta": -316,
+            ".data-delta": -4,
+            ".bss-delta": -166
         }
     },
     {
@@ -93,7 +93,7 @@
             ".text": 647,
             ".data": 0,
             ".bss": 0,
-            ".text-delta": 0,
+            ".text-delta": 4,
             ".data-delta": 0,
             ".bss-delta": 0
         }
@@ -101,7 +101,7 @@
     {
         "module": "mbed-os\\drivers",
         "size": {
-            ".text": 5322,
+            ".text": 5690,
             ".data": 0,
             ".bss": 40,
             ".text-delta": 0,
@@ -134,10 +134,10 @@
     {
         "module": "mbed-os\\rtos",
         "size": {
-            ".text": 1166,
+            ".text": 1174,
             ".data": 0,
             ".bss": 0,
-            ".text-delta": 0,
+            ".text-delta": 8,
             ".data-delta": 0,
             ".bss-delta": 0
         }
@@ -156,20 +156,31 @@
     {
         "module": "secondThread.o",
         "size": {
-            ".text": 4174,
-            ".data": 4,
-            ".bss": 2688,
-            ".text-delta": 196,
+            ".text": 5305,
+            ".data": 64,
+            ".bss": 2968,
+            ".text-delta": 7,
             ".data-delta": 0,
-            ".bss-delta": -2
+            ".bss-delta": 0
+        }
+    },
+    {
+        "module": "thirdThread.o",
+        "size": {
+            ".text": 452,
+            ".data": 4,
+            ".bss": 358,
+            ".text-delta": 452,
+            ".data-delta": 4,
+            ".bss-delta": 358
         }
     },
     {
         "summary": {
-            "static_ram": 13431,
-            "static_ram_delta": -2,
-            "total_flash": 68193,
-            "total_flash_delta": 196
+            "static_ram": 14137,
+            "static_ram_delta": 192,
+            "total_flash": 70708,
+            "total_flash_delta": 203
         }
     }
 ]

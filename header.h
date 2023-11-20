@@ -17,5 +17,10 @@ enum Colors{RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW,WHITE,OFF};
 
 extern deviceMode mode;
 
+extern int distanceCM;
 extern Thread threadMeasurements;
+
+extern Thread threadDistance;
+
 void MeasurementsDisplay();
+void Distance();

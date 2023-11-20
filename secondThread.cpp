@@ -18,28 +18,30 @@ int readings;           // counter for readings
 
 // ----- MEASUREMENTS LIMITS -----
 // Temperature
-int limitTemperatureMIN=-10;
-int limitTemperatureMAX=50;
+float limitTemperatureMIN=-10;
+float limitTemperatureMAX=50;
 
 // Relative humidity
-int limitHumidityMIN=25;
-int limitHumidityMAX=75;
+float limitHumidityMIN=25;
+float limitHumidityMAX=75;
 
 // Ambient Light / Brightness
-int limitBrightnessMIN=0;
-int limitBrightnessMAX=100;
+float limitBrightnessMIN=0;
+float limitBrightnessMAX=60;
 
 // Soil Moisture
-int limitMoistureMIN=0;
-int limitMoistureMAX=100;
+float limitMoistureMIN=0;
+float limitMoistureMAX=60;
 
 // Color sensor       C R G B
 int limitColorMIN[4]={0,0,0,0}; 
-int limitColorMAX[4]={0,0,0,0};
+int limitColorMAX[4]={10000,5000,10000,5000};
 
 // Acceleration              X Y Z
-int limitAccelerationMIN[3]={0,0,0}; 
-int limitAccelerationMAX[3]={0,0,0};
+#define g                       9.81 // Gravity
+
+float limitAccelerationMIN[3]={-2*g,-2*g,-2*g};
+float limitAccelerationMAX[3]={2*g,2*g,2*g};
 
 
 // ----- PIN DEFINITIONS -----
@@ -79,7 +81,7 @@ float bufferFloat;
 #define REG_ACC_Z_MSB           0x05
 #define REG_ACC_SYSMOD          0x0B
 
-#define g                       9.81 // Gravity
+
 
 
 // Color sensor
@@ -105,12 +107,15 @@ DigitalOut ledColorSensor(D9);
 // D8 - Serial1_TX
 // D2 - Serial1_RX
 static BufferedSerial serialGPS(D8, D2);
+char bufferGPS[256]; 
+// 256 bytes should be enough to get GPGGA
+
 
 // Serial Interface with PC through USB
 // D0(USBRX) and D1(USBTX) pins reserved for USB
 static BufferedSerial serialPC(USBTX, USBRX);
 char bufferSerial[128];
-   
+int distanceLocal;
 
 
 
@@ -259,6 +264,89 @@ int readRGBC(int *RGB){
 
 }
 
+bool readGPS(char *GPSTime, char *GPSLatitude, char *GPSLatIndicator, char *GPSLongitude, char *GPSLongIndicator, char*GPSAltitude){
+
+    bool GPSFixed,flagGPGGAfound=false; // control flags for parsing
+    char GPGGATag[]="GPGGA";
+    char GPStag[]={}; 
+    int gpggaIndex=0; // index to parse 
+
+
+    // REAL DATA
+    serialGPS.read(bufferGPS, sizeof(bufferGPS));
+
+    // RAW GPS data
+    // serialPC.write(bufferGPS, sizeof(bufferGPS));
+
+
+    // TESTING DATA
+    // char bufferGPS[]=
+    //         "$GPGGA,064951.000,2307.1256,N,12016.4438,E,1,8,0.95,39.9,M,17.8,M,,*65" 
+    //         "$GPGSA,A,3,29,21,26,15,18,09,06,10,,,,,2.32,0.95,2.11*00" 
+    //         "$GPGSV,3,1,09,29,36,029,42,21,46,314,43,26,44,020,43,15,21,321,39*7D"
+    //         "$GPGSV,3,2,09,18,26,314,40,09,57,170,44,06,20,229,37,10,26,084,37*77"
+    //         "$GPGSV,3,3,09,07,,,26*73 "
+    //         "$GPRMC,064951.000,A,2307.1256,N,12016.4438,E,0.03,165.48,260406,3.05,W,A*2C"
+    //         "$GPVTG,165.48,T,,M,0.03,N,0.06,K,A*37";
+
+    const char divideBy[]= ",$";
+    char* token = strtok(bufferGPS, divideBy);
+
+    while (token != NULL)
+    {
+        if (flagGPGGAfound==true){
+            switch (gpggaIndex) {
+            case 1: strcpy(GPSTime,token); break;
+            case 2: if (*token=='0'){
+                        GPSFixed=false;
+                        gpggaIndex=100;
+                        flagGPGGAfound=false;}
+                    else {
+                        strcpy(GPSLatitude,token);
+                        GPSFixed=true;}               
+                    break;
+
+            case 3: strcpy(GPSLatIndicator,token);      break;
+            case 4: strcpy(GPSLongitude,token);         break;
+            case 5: strcpy(GPSLongIndicator,token);     break;
+            case 9: strcpy(GPSAltitude,token);          break;
+            }
+            gpggaIndex++;
+        }
+
+        if (*token== 'G'){
+            GPStag[0] = *token;     // G
+            GPStag[1] = *(token+1); // P
+            GPStag[2] = *(token+2); // G
+            GPStag[3] = *(token+3); // G
+            GPStag[4] = *(token+4); // A     
+            
+            // sprintf (bufferSerial, "GPStag: %s == %s \n", GPStag, GPGGATag);
+            // serialPC.write(bufferSerial, strlen(bufferSerial));
+
+
+            // if (strcmp(GPStag,GPGGATag)==0) not working??
+            
+            // check that the tag is GPGGA (char by char)
+            if ((GPStag[0]==GPGGATag[0]) && (GPStag[1]==GPGGATag[1]) && (GPStag[2]==GPGGATag[2]) 
+                && (GPStag[3]==GPGGATag[3]) &&(GPStag[4]==GPGGATag[4])){
+                flagGPGGAfound=true;
+                gpggaIndex=1;
+
+                // sprintf (bufferSerial, "GPGGA FOUND \n");
+                // serialPC.write(bufferSerial, strlen(bufferSerial));
+            }
+        }
+        
+        
+        // sprintf (bufferSerial, "token: %s \n", token);
+        //serialPC.write(bufferSerial, strlen(bufferSerial));
+
+        token = strtok (NULL, divideBy);
+    }
+    flagGPGGAfound=false;
+    return GPSFixed;
+}
 
 void ledLight(Colors color){
     switch (color)
@@ -285,7 +373,7 @@ void MeasurementsDisplay(void) {
    
     // Tickers of 2s and 30s for each mode
     tickerTEST.attach(&tickTEST,2s);
-    tickerNORMAL.attach(&tickNORMAL,30s); 
+    tickerNORMAL.attach(&tickNORMAL,2s); 
 
     // Measurement variables
     // Light
@@ -320,9 +408,9 @@ void MeasurementsDisplay(void) {
     float statisticsXAcc[3],statisticsYAcc[3],statisticsZAcc[3];
 
     // GPS
-    // with 256 bytes it reads ~ GGA,GSA,RMC,VGT and GGA,GSA again
-    char bufferGPS[256]; 
-
+    char GPSTime[12]={}, GPSLatitude[12]={}, GPSLatIndicator[2]={}, GPSLongitude[12]={}, GPSLongIndicator[12]={}, GPSAltitude[12]={};
+    char bufferFormat[12];
+    bool GPSFix;
     
 
     // Config Devices
@@ -330,16 +418,17 @@ void MeasurementsDisplay(void) {
 
     configRGBSensor_TCS34725();
 
+    ledLight(OFF);
 
     while(true) {
         if (mode==TEST) {readings=0;}
 
         // -------------------------- TIMED LOOP ----------------------
         // Only activates every 2 seconds when its TEST mode
-        // Only activates every 30 seconds when its NORMAL mode
+        // Only activates every 30 seconds when its NORMAL/ADVANCED mode
 
 
-        if((flagTEST & (mode==TEST))   ||    ((flagNORMAL) & (mode==NORMAL))){
+        if((flagTEST & (mode==TEST))   ||    ((flagNORMAL) & ((mode==NORMAL) || (mode==ADVANCED)))){
             
             sprintf(bufferSerial,"----------------------------- \n");
             serialPC.write(bufferSerial, strlen(bufferSerial));
@@ -356,11 +445,40 @@ void MeasurementsDisplay(void) {
             brightness = (sensorLight.read_u16()*100)/brightnessMAX;
 
             // GPS  
-            // serialGPS.read(bufferGPS, sizeof(bufferGPS));
+            
+            GPSFix=readGPS(GPSTime, GPSLatitude, GPSLatIndicator, GPSLongitude, GPSLongIndicator, GPSAltitude);
+            // GPSFix = false if there isnt a fix
+            // GPSFix = true if there is a fix
 
+            // format data
+            if (GPSFix==true){
+                // Latitude from DDMM.MMMM to DD.MMMMMM
+                // Longitude from DDDMM.MMMM to DDD.MMMMMM
+
+                strcpy(bufferFormat,GPSLatitude);
+                GPSLatitude[2]='.';
+                GPSLatitude[3]=bufferFormat[2];
+                GPSLatitude[4]=bufferFormat[3];
+
+                strcpy(bufferFormat,GPSLongitude);
+                GPSLongitude[3]='.';
+                GPSLongitude[4]=bufferFormat[3];
+                GPSLongitude[5]=bufferFormat[4];
+            }
+
+            // Time from HHMMSS.SSS to HH:MM:SS
+                strcpy(bufferFormat, GPSTime);
+                GPSTime[2]=':';
+                GPSTime[3]=bufferFormat[2];
+                GPSTime[4]=bufferFormat[3];
+                GPSTime[5]=':';
+                GPSTime[6]=bufferFormat[4];
+                GPSTime[7]=bufferFormat[5];
+                GPSTime[8]=' ';
+                GPSTime[9]=' ';
+            
 
             // COLOR
-            
             // Light the LED for 800ms since the config of the sensor is to take measures for 700ms
             ledColorSensor=1;
             ThisThread::sleep_for(800ms);
@@ -392,8 +510,8 @@ void MeasurementsDisplay(void) {
             
 
 
-            // ---------------------- NORMAL MODE ----------------------
-            if (mode==NORMAL){
+            // ---------------------- NORMAL/ADVANCED MODE ----------------------
+            if (mode==NORMAL || mode==ADVANCED){
                
                 // ------------------ STATISTICS ------------------
                 // Save measurements for statistics every 1 hour
@@ -461,7 +579,7 @@ void MeasurementsDisplay(void) {
 
 
             // TIME
-            sprintf (bufferSerial, "\tHH:MM:SS \n");
+            sprintf (bufferSerial, "\t %s \n", GPSTime);
             serialPC.write(bufferSerial, strlen(bufferSerial));
 
             // Brigthness
@@ -489,8 +607,21 @@ void MeasurementsDisplay(void) {
             serialPC.write(bufferSerial, strlen(bufferSerial));
 
             // GPS 
-            sprintf (bufferSerial, "GPS \n\tLATITUDE (UTC) X N/S \n\tLONGITUDE(UTC) X E/W \n\tALTITUDE       X m\n");
+            if (GPSFix==false){
+                sprintf (bufferSerial, "NO GPS FIX \nLast known location (if avaliable) \n");
+                serialPC.write(bufferSerial, strlen(bufferSerial));
+            }
+            sprintf (bufferSerial, "GPS \n\tLATITUDE (UTC) %s %s \n\tLONGITUDE(UTC) %s %s \n\tALTITUDE       %s m\n", GPSLatitude,GPSLatIndicator,GPSLongitude,GPSLongIndicator,GPSAltitude);
             serialPC.write(bufferSerial, strlen(bufferSerial));
+
+            
+            // ---------------------------------
+            // DISTANCE (ADVANCED MODE)
+            if (mode==ADVANCED){
+            distanceLocal=distanceCM;
+            sprintf (bufferSerial, "DISTANCE         %d cm \n", distanceLocal);
+            serialPC.write(bufferSerial, strlen(bufferSerial));
+            }
 
             // GPS RAW 
             //serialPC.write(bufferGPS, sizeof(bufferGPS));
@@ -533,7 +664,7 @@ void MeasurementsDisplay(void) {
             }     
                     
 
-            if (mode==NORMAL){
+            if (mode==NORMAL || mode==ADVANCED){
             
             
              // ------------------ ALARMS ----------------------
@@ -569,6 +700,8 @@ void MeasurementsDisplay(void) {
                 else if ((xAcc > limitAccelerationMAX[0]) || (xAcc < limitAccelerationMIN[0]))      ledLight(YELLOW);
                 else if ((yAcc > limitAccelerationMAX[1]) || (yAcc < limitAccelerationMIN[1]))      ledLight(YELLOW);
                 else if ((zAcc > limitAccelerationMAX[2]) || (zAcc < limitAccelerationMIN[2]))      ledLight(YELLOW);
+                
+                else ledLight(OFF);
 
             }
         }

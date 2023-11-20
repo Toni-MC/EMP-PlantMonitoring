@@ -4,6 +4,7 @@
  */
 
 #include "header.h"
+#include <cstdio>
 
 
 // using namespace std
@@ -34,42 +35,47 @@ void changeMode(deviceMode mode_aux){
 }
 
 
+// // Telemetric
+// Timer timerEcho;
+// DigitalOut trigger(PH_1);
+// InterruptIn echo(D7);
+
+// DigitalOut ledDistance(LED4);
+
+// bool flagEcho,flagTrigger;
+// int elapsedTime;
+// int distanceCM=10;
+
+
+// void echoStart(){
+//     timerEcho.start();
+// }
+
+// void echoEnd(){
+//     timerEcho.stop();
+//     flagEcho=true;
+// }
+
+
+
 int main()
 {
     sw.mode(PullDown); // Al pulsarlo pasa a 1
     sw.fall(sw_on_isr);
     sw.rise(sw_off_isr);
 
+    // echo.rise(echoStart);
+    // echo.fall(echoEnd);
+
+
     // Initialize mode to NORMAL
     changeMode(NORMAL);
 
     // Start the second thread for measurements
     threadMeasurements.start(MeasurementsDisplay);
+    threadDistance.start(Distance);
 
     while (true) {
-
-            // GPS TESTING
-            //char GPSbuffer[250]={};
-            // serialGPS.read(GPSbuffer, 250);
-            
-            // std::cout << GPSbuffer << "\n";
-            
-
-            // $GPGGA,064951.000,2307.1256,N,12016.4438,E,1,8,0.95,39.9,M,17.8,M,,*65 
-            // $GPGSA,A,3,29,21,26,15,18,09,06,10,,,,,2.32,0.95,2.11*00 
-            //
-            // $GPGSV,3,1,09,29,36,029,42,21,46,314,43,26,44,020,43,15,21,321,39*7D
-            // $GPGSV,3,2,09,18,26,314,40,09,57,170,44,06,20,229,37,10,26,084,37*77
-            // $GPGSV,3,3,09,07,,,26*73 
-            //
-            // $GPRMC,064951.000,A,2307.1256,N,12016.4438,E,0.03,165.48,260406,3.05,W,A*2C 
-            // $GPVTG,165.48,T,,M,0.03,N,0.06,K,A*37
-            
-            // serialPC.write(GPSbuffer, 100);
-
-            // ThisThread::sleep_for(2s);
-
-
 
         if(on) {on = false; } // iniciar contador
 
@@ -84,13 +90,61 @@ int main()
         }
 
 
-        switch(mode)
-            {
-                case TEST  :        break;
-                case NORMAL:        break;
-                case ADVANCED:      break;
-            }
+        // switch(mode)
+        //     {
+        //         case TEST  :        break;
+        //         case NORMAL:        break;
+        //         case ADVANCED:      break;
+        //     }
 
+
+
+
+
+
+
+        // // distance sensor
+        // // if it hasnt been sent, send a trigger signal
+        // if (flagTrigger==false){
+        //     flagTrigger=true;
+
+        //     // 10 us pulse
+        //     trigger=1;
+        //     wait_us(10);
+        //     trigger=0;
+        // }
+
+        // if (flagEcho==true){
+        //     elapsedTime=timerEcho.elapsed_time().count(); // if timer is 0 it returns  58000, check it!
+        //     timerEcho.reset();
+
+        //     if (elapsedTime >= 58000){
+        //         // sensor measurement error 
+        //         // timer gave a wrong reading (10100)
+        //         distanceCM=0;
+        //     }
+        //     else {
+        //     distanceCM = elapsedTime / 58;
+            
+        //     if (distanceCM>=99) distanceCM=99;
+        //     // map values (wrong)
+        //     float minInRange= 0;
+        //     float maxInRange= 99;
+        //     float minOutRange= 0;
+        //     float maxOutRange= 2;
+        //     float x;
+
+        //     x = (distanceCM - minInRange) / (maxInRange - minInRange);
+        //     blinktime = minOutRange + (maxOutRange - minOutRange) * x;
+
+        //     // time to read again
+        //     flagTrigger=false;
+        //     }
+        // }
+        // ledDistance=1;
+        // ThisThread::sleep_for(blinktime*1000);
+        // ledDistance=0;
+        // ThisThread::sleep_for(1s);
             
     }
 }
