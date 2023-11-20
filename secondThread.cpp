@@ -445,7 +445,6 @@ void MeasurementsDisplay(void) {
             brightness = (sensorLight.read_u16()*100)/brightnessMAX;
 
             // GPS  
-            
             GPSFix=readGPS(GPSTime, GPSLatitude, GPSLatIndicator, GPSLongitude, GPSLongIndicator, GPSAltitude);
             // GPSFix = false if there isnt a fix
             // GPSFix = true if there is a fix
@@ -486,7 +485,7 @@ void MeasurementsDisplay(void) {
             clear=readRGBC(RGB);
             ledColorSensor=0;
 
-            dominantColorValue=*max_element(RGB, RGB + 3);
+            dominantColorValue=*max_element(RGB, RGB + 3); // highest element between the start and the end of the rgb array
             if (dominantColorValue==RGB[0]) {dominantColor='R'; if (mode==TEST) ledLight(RED);}
             if (dominantColorValue==RGB[1]) {dominantColor='G'; if (mode==TEST) ledLight(GREEN);}
             if (dominantColorValue==RGB[2]) {dominantColor='B'; if (mode==TEST) ledLight(BLUE);}
@@ -530,7 +529,7 @@ void MeasurementsDisplay(void) {
                 readings++;
 
                 if (readings==readingsMaxN){
-                // When 120 readings are done: 
+                // When 120 readings are done: (or maxNumber)
 
                     // Mean[0], MAX[1], MIN[2]
                     // TEMPERATURE
