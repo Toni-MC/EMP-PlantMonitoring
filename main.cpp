@@ -37,15 +37,21 @@ void changeMode(deviceMode mode_aux){
 
 
 // Telemetric
-Timer timerEcho;
+Timer timerEcho,timerLEDControl;
 DigitalOut trigger(PH_1);
 InterruptIn echo(D7);
 
+// Also using PB_7 (LED4) for serial communication with the GPS in
 DigitalOut ledDistance(LED4);
 
 bool flagEcho,flagTrigger;
 int elapsedTime;
-int distanceCM=10;
+float distanceCM=10;
+float blinktime;
+
+void flipLED(){
+    // ledDistance=!ledDistance;
+}
 
 
 void echoStart(){
@@ -56,7 +62,6 @@ void echoEnd(){
     timerEcho.stop();
     flagEcho=true;
 }
-
 
 
 int main()
@@ -75,11 +80,15 @@ int main()
 
     // Start the second thread for measurements
     threadMeasurements.start(MeasurementsDisplay);
-    threadDistance.start(Distance);
+
+    // threadDistance.start(Distance);
+    timerLEDControl.start();
+
+
 
     while (true) {
 
-        if(on) {on = false; } // iniciar contador
+        if(on) {on = false; }
 
         if(off) {
             switch(mode)
@@ -98,11 +107,6 @@ int main()
         //         case NORMAL:        break;
         //         case ADVANCED:      break;
         //     }
-
-
-
-
-
 
 
         // distance sensor
@@ -125,8 +129,8 @@ int main()
                 // timer gave a wrong reading (10100)
                 distanceCM=0;
             }
-            else {
-            distanceCM = elapsedTime / 58;
+            
+            distanceCM = (float)elapsedTime / 58;
             
             if (distanceCM>=99) distanceCM=99;
             // map values (wrong)
@@ -141,12 +145,20 @@ int main()
 
             // time to read again
             flagTrigger=false;
-            }
-        }
-        ledDistance=1;
-        ThisThread::sleep_for(blinktime*1000);
-        ledDistance=0;
-        ThisThread::sleep_for(1s);
             
+        }
+
+        if (timerLEDControl.elapsed_time().count() >= blinktime*1000000){
+
+            flipLED();
+            timerLEDControl.reset();
+        }
+
+        // ledDistance=1;
+        // ThisThread::sleep_for(blinktime*1000);
+        // ledDistance=0;
+
+        // ThisThread::sleep_for(1s);
+        
     }
 }

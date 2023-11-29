@@ -373,13 +373,14 @@ void MeasurementsDisplay(void) {
    
     // Tickers of 2s and 30s for each mode
     tickerTEST.attach(&tickTEST,2s);
-    tickerNORMAL.attach(&tickNORMAL,2s); 
+    tickerNORMAL.attach(&tickNORMAL,30s); 
 
     // Measurement variables
     // Light
     float brightness, brightnessMAX=65535;
     float readingsBrigthness[readingsMaxN];
     float statisticsBrigthness[3];
+
 
     // Soil Moisture
     float moisture, moistureMAX=65535;
